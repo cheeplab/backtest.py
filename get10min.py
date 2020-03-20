@@ -1,26 +1,30 @@
 #10分足で作成したカギ足によるバックテスト(ネットに挙がってたものを参考に作成)
-　#ルール？　①日中立会内で売買　②値幅50円で更新　③前の山(谷)を超えたら新規、前の谷(山)を超えたら決済
+#ルール？　①日中立会内で売買　②値幅50円で更新　③前の山(谷)を超えたら新規、前の谷(山)を超えたら決済
 import os
 import openpyxl as px
+from openpyxl.chart import LineChart,Reference,series
 import datetime
 from collections import deque
 
-def get10minSheet():
+def getSheet():
     print(os.getcwd())
     
-    print("データをインプットしてください ->")
+    print("データをインプットしてください")
     input_data = input()
 
     print(os.getcwd()+"\\"+input_data)
 
+    print("何分足か数字で入力してください ex)一時間⇒ 60")
+    input_time = input()
+
     wb = px.load_workbook(os.getcwd()+"\\"+input_data)
 
-    return wb["10min"]
+    return wb[input_time+"min"]
 
 #日中立会内での暫定高(安)値とその時の日時を記録する関数
 def get225Data():
     
-    sheet = get10minSheet()
+    sheet = getSheet()
 
     #[]:listを初期化する
     list1 = []
@@ -251,13 +255,14 @@ def make_performance(entry_point,save_name):
 
     sum_sonneki = 0
     column_count = 2
+    #sonneki内の-1は手数料代100円を想定
     for i in range(1,len(entry_point)):
         if entry_point[i-1][3] == 1:
-            sonneki = entry_point[i-1][2] - entry_point[i][2]
+            sonneki = (entry_point[i-1][2] - entry_point[i][2]-1)*100
         else:
-            sonneki = entry_point[i][2] - entry_point[i-1][2]
+            sonneki = (entry_point[i][2] - entry_point[i-1][2]-1)*100
 
-        sum_sonneki += sonneki*100
+        sum_sonneki += sonneki
 
         sheet2.cell(row=column_count, column=1, value=entry_point[i-1][0])
         sheet2.cell(row=column_count, column=2, value=entry_point[i-1][2])
@@ -269,6 +274,11 @@ def make_performance(entry_point,save_name):
 
         column_count += 1
 
+    #折れ線グラフの作成
+    values = Reference(sheet2,min_col=7,min_row=2,max_col=7,max_row=len(entry_point)+1)
+    chart = LineChart()
+    chart.add_data(values)
+    sheet2.add_chart(chart,"I2")
+
     wb2.save(save_name)
 
-get225Data()
