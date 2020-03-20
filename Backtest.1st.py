@@ -1,4 +1,4 @@
-#実運用のルールのバックテスト
+#実運用のルールのバックテスト!(excelデータを入力、出力)
 #ルール　①Hyperによる取引(日中と夜の立会ごとに決済）　②値幅30円で更新　③前の山(谷)を超えて+30で新規、前の谷(山)を超えて-20で決済　④手数料は売買1回で100円と仮定
 import os
 import openpyxl as px
@@ -39,7 +39,7 @@ def get225Data():
             if yori_time_am == sheet.cell(row=i,column=2).value or yori_time_pm == sheet.cell(row=i,column=2).value:
                 yori_frag = True
 
-            #日中立会の時間帯か確認
+            #立会時間かどうか確認
             if yori_frag == True:
                 if not hike_time_am < sheet.cell(row=i,column=2).value and sheet.cell(row=i,column=2).value < yori_time_pm: 
                     #場の開始時に始値と暫定高値の幅が30円(窓開け)の場合
