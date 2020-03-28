@@ -21,7 +21,7 @@ def get1minsheet():
     
     return(df_2.reset_index(drop=True))
 
-#ohlc_5 = [日付、時間、始値、[高値、安値](1分足)*tf、終値]
+#ohlc_5 = [日付、時間、始値、[高値、安値](1分足)*tf、終値]⇒([0]:日付,[1]:時間,[2]:始値,[3]~[7]:高値、安値,[8]:終値)
 def make_ohlc(df,tf):
     ohlc = []
 
