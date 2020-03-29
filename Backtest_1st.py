@@ -5,7 +5,6 @@ import pandas as pd
 import openpyxl as px
 from openpyxl.chart import LineChart,Reference,series
 import datetime
-from collections import deque
 
 #df_2 = [日付、時間、始値、高値、安値、終値](日付、時間はdatetime型(時間をtime型にしたかったけどよく分からなかった))
 #夜相場の閉め時のデータは削除、次の関数でindexが倍数になるごとにリストを作るためにキリ良くしたかった
@@ -44,11 +43,10 @@ def make_ohlc(df,tf):
     return(ohlc)
 
 #日中立会内での暫定高(安)値とその時の日時を記録する関数
-def get225Data():
-    
-    print("作成したい足を入力してください　ex)1H ⇒ 60")
-    input_min = input()
+def get225Data(input_min,entry,out):
     input_min = int(input_min)
+    entry = int(entry)
+    out = int(out)
     sheet = make_ohlc(get1minsheet(),input_min)
 
     #[]:listを初期化する
@@ -78,11 +76,11 @@ def get225Data():
             if abs(i[4]-i[2]) >= 30:
                 if i[4] < prev:
                     yama = prev
-                    entry_L = yama+30
+                    entry_L = yama+entry
                     trend = -1
                 else:
                     tani = prev
-                    entry_S = tani-30
+                    entry_S = tani-entry
                     ternd = 1
 
                 prev = i[4]
@@ -99,7 +97,7 @@ def get225Data():
                         per_data = []
                         frag = 0
                     elif tani-20 > i[3][j][1]:
-                        per_data.extend([i[1],tani-20,"L"])
+                        per_data.extend([i[1],tani-out,"L"])
                         data.append(per_data)
                         per_data = []
                         frag = 0
@@ -110,7 +108,7 @@ def get225Data():
                         per_data = []
                         frag = 0
                     elif yama+20 < i[3][j][0]:
-                        per_data.extend([i[1],yama+20,"S"])
+                        per_data.extend([i[1],yama+out,"S"])
                         data.append(per_data)
                         per_data = []
                         frag = 0
@@ -142,20 +140,19 @@ def get225Data():
                         prev = i[4]
                     else:
                         tani = prev
-                        entry_S = tani-30
+                        entry_S = tani-entry
                         trend = 1
                 else:
                     if trend == -1:
                         prev = i[4]
                     else:
                         yama = prev
-                        entry_L = yama+30
+                        entry_L = yama+entry
                         trend =-1
 
-    print("損益表名を入力してください ->")
-    input_data_kagi = input()
-
-    make_performance(data,input_data_kagi+".xlsx")
+    entry = str(entry)
+    out = str(out)
+    make_performance(data,"kagiashi"+entry+","+out+".xlsx")
 
 
 def make_performance(entry_point,save_name):
@@ -193,10 +190,13 @@ def make_performance(entry_point,save_name):
 
         column_count += 1
 
+    sheet2["J1"] = "年間損益"
+    sheet2.cell(row=2,column=10,value=sum_sonneki)
+
     #折れ線グラフの作成
     values = Reference(sheet2,min_col=8,min_row=2,max_col=8,max_row=len(entry_point)+1)
     chart = LineChart()
     chart.add_data(values)
-    sheet2.add_chart(chart,"I2")
+    sheet2.add_chart(chart,"J6")
 
     wb2.save(save_name)
