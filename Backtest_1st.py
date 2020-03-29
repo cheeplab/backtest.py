@@ -1,5 +1,6 @@
 #実運用のルールのバックテスト(excel.csvデータを入力、出力)
-#ルール　①Hyperによる取引(日中と夜の立会ごとに決済）　②値幅30円で更新　③前の山(谷)を超えて+30で新規、前の谷(山)を超えて-20で決済　④含み損100で損切り　⑤手数料は売買1回で100円と仮定 ⑥1年分でテスト(sq日ごとに計算はしない)
+#ルール　①Hyperによる取引(日中と夜の立会ごとに決済）　②値幅30円で更新　③前の山(谷)を超えて+30で新規、前の谷(山)を超えて-20で決済　④含み損100で損切り　⑤手数料は売買1回で100円と仮定 
+#        ⑥1年分でテスト(sq日ごとに計算はしない)　⑦相場が締まる際は終了5分前に強制決済
 import os
 import pandas as pd
 import openpyxl as px
@@ -59,10 +60,12 @@ def get225Data(input_min,entry,out):
     entry_S = 0
     frag = 0
     trend = 0
+    #相場時間 日中:18:45~15:15 夜:16:30~29:30
+    #各引けについて、その時刻のデータは1分前の終値と同値だから使用しない、また引け前の5分間は相場が動かないので使用していない
     yori_time_am = datetime.datetime(1900,1,1,8,45) 
-    hike_time_am = datetime.datetime(1900,1,1,15,10)
+    hike_time_am = datetime.datetime(1900,1,1,15,5)
     yori_time_pm = datetime.datetime(1900,1,1,16,30)
-    hike_time_pm = datetime.datetime(1900,1,1,5,25)
+    hike_time_pm = datetime.datetime(1900,1,1,5,20)
 
     #sheetに要素がなくなるまで繰り返す関数
     for i in sheet:
@@ -85,7 +88,7 @@ def get225Data(input_min,entry,out):
 
                 prev = i[4]
 
-        elif i[1] <= hike_time_am or yori_time_pm < i[1]:
+        elif i[1] <= hike_time_pm or (yori_time_am <= i[1] and i[1] <= hike_time_am) or yori_time_pm < i[1]:
             #分足での高(安)値がエントリーor決済に入ってるか調べる。fragが立っていれば決済、なければエントリーポイントを探す
             #決済時の判定優先は(損切り)>(利確)
             for j in range(input_min):
@@ -121,6 +124,7 @@ def get225Data(input_min,entry,out):
                         per_data.extend([i[0],i[1],entry_S])
                         frag = -1
 
+            #相場が締まるとその終値で決済(上にも記載してるけど、最後の足は動かなくなるので一個前の使用)
             if i[1] == hike_time_am or i[1] == hike_time_pm:
                 if frag == 1:
                     per_data.extend([i[1],i[4],"L"])
